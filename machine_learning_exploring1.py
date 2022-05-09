@@ -1,4 +1,5 @@
-# Exploring data frame using machine learning functions and modeling accurancy
+# Szukanie precyzyjności badanego modelu wykorzystując biblioteki seaborn, sklearn, pandas, numpy i kilku funkcji machine learning
+# Exploring data frame using machine learning functions and modeling accurancy (seaborn, sklearn, pandas, numpy)
 
 import numpy as np
 import matplotlib.pyplot as plt
