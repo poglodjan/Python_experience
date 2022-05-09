@@ -1,3 +1,5 @@
+# Exploring data frame using machine learning functions and modeling accurancy
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
