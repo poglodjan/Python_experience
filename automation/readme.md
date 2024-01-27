@@ -1,4 +1,4 @@
 ## Code overview
 
 ### In this file I realised my project for one of the corporate I worked in. 
-### This code was made to automate for resource and employers planning, uploading data from excel and analysis it via python
+### This code was created to automate resource and employer scheduling, upload data from Excel and analyze it using Python
