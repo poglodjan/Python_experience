@@ -1,1 +1,1 @@
-### ML and autoML projects from college (all raports are in polish)
+### ML and autoML projects from college (all PDF are in polish)
