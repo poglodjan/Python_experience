@@ -8,7 +8,7 @@ import openpyxl
 from openpyxl.styles import PatternFill
 from openpyxl import Workbook
 
-#   Szuka pliku pobranego z jiry 
+#   Searching for a file uploaded from Jira
 def find():
     onlyfiles = [f for f in listdir("./") if isfile(join("./",f))]
     n=len(onlyfiles)
@@ -41,7 +41,7 @@ def is_xlsx(ex_file):
         else: continue
     return table
 
-# zapisuje z csv do xlsx
+# Save csv to xlsx
 def to_xlsx(onlyfiles,i):
     key = onlyfiles[i]
     new_key = ""
@@ -52,7 +52,7 @@ def to_xlsx(onlyfiles,i):
     new_key+=".xlsx"
     return new_key
 
-# zwraca tablice plików w folderze csvresult (sprawdza nazwy projktów)
+# return array of files (projects name)
 def check():
     onlyfiles = [f for f in listdir("./") if isfile(join("./",f))]
     n=len(onlyfiles)
@@ -104,7 +104,7 @@ def main():
     os.remove("blkprm.csv")
     os.remove("kons.csv")
 
-    #znadowanie nazw plików 
+    # finding files names
     table=is_csv()
     n=len(table)
 
@@ -116,17 +116,17 @@ def main():
         napisxml = f"{napisxml}"
         read_file.to_excel(napisxml, index = False, startcol=0)
 
-    #usuwanie csv
+    #deleting csv
     for i in range(n):
         os.remove(f'{table[i]}')
 
-    # merge wszystkich arkuszy w jeden
+    # merge all sheets in w jeden
     pliki = is_xlsx(ex_file)
     print(pliki)
     l = len(pliki)
     nazwy=rozdziel(pliki)
   
-    # stworzenie pliku result
+    # result file creating
     wb = Workbook()
     ws =  wb.active
     ws.title = f"{nazwy[0]}"
