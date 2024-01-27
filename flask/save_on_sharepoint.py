@@ -17,8 +17,8 @@ sp.download(sharepoint_location = download_path
 
 
 SPUrl = "https://rabyte21.sharepoint.com/"
-username = 'JanPoglod@rabyte21.onmicrosoft.com'
-password =  'Poker2022' 
+username = BLURED
+password =  BLURED
 site = "https://rabyte21.sharepoint.com/Shared%20Documents" 
 
 from office365.runtime.auth.user_credential import UserCredential
@@ -33,8 +33,8 @@ from office365.sharepoint.client_context import ClientContext
 
 test_team_site_url = "https://rabyte21.sharepoint.com/"
 
-username = 'JanPoglod@rabyte21.onmicrosoft.com'
-password =  'Poker2022' 
+username = BLURED
+password =  BLURED
 
 sharing_link_url = "https://rabyte21.sharepoint.com/:x:/g/EeQRnxN8bHlKnWfRX-K7YY0BDpCLyoFV3fafK2eLpOKoEw?e=BMVLvb"
 
@@ -59,8 +59,8 @@ sp.download(sharepoint_location = download_path
 from office365.runtime.auth.client_credential import ClientCredential
 from office365.sharepoint.client_context import ClientContext
 
-username = 'JanPoglod@rabyte21.onmicrosoft.com'
-password =  'Poker2022' 
+username = BLURED
+password =  BLURED
 
 site_url = "https://rabyte21.sharepoint.com/"
 client_id = "604278c3-62ed-4933-b939-ef4b8c8cebe2"
