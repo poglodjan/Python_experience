@@ -7,3 +7,4 @@
 - AUTOMATION - corporate project automating Excel to process employee allocations
 - python_sql_application - client application to manage database
 - machine learning - research projects from studies that anylise some ML and autoML algorithms to anaylise data
+- projects - contains my own work like creating games or data analysis, includes sql and python comparison for data analysis
