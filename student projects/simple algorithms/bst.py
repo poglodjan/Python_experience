@@ -43,5 +43,11 @@ def deleteNode(root, key):
         root.right = deleteNode(root.right, root.key)
     return root
 
+def insert_array_to_bst(root, arr):
+    for key in arr:
+        root = insert(root, key)
+    return root
+
 def main():
     arr = [2,4,5,6,7,1,10]
+    root = insert_array_to_bst(root, arr)
