@@ -112,8 +112,7 @@ def index():
     return render_template('index.html', graph_html=graph_html, graph_html2=graph_html2)
 
 def lambda_handler(event, context):
-    print(event)
-    return 'Hello from Lambda!'
+    return awsgi.response(app, event, context, base64_content_types={image/png})
 
 if __name__ == '__main__':
     app.run(debug=True)
