@@ -113,15 +113,14 @@
     position: relative;
     z-index: -1;
     word-spacing: 5px;
-    line-height: 1.5; 
+    line-height: 1.5;
     width: 76%;
     font-size: 20px;
   }
 
   #plotly-chart {
     opacity: 0;
-    transform: translateY(50px);
-    transition: opacity 1s ease, transform 1s ease; /* Dodaj przejścia */
+    transition: opacity 2s ease; /* Dodaj przejścia */
 }
 
    /* .chart-container {
@@ -204,16 +203,20 @@
 <script>
     window.addEventListener('load', function() {
     var plotlyChart = document.getElementById('plotly-chart');
-    plotlyChart.style.opacity = 1;
-    plotlyChart.style.transform = 'translateY(0)';
+    plotlyChart.style.opacity = 0; // Ustawienie początkowej przezroczystości na 0
     anime({
         targets: '#plotly-chart',
         opacity: [0, 1],
-        translateY: [50, 0],
+        translateY: ['100%', 0], // Przesunięcie z 100% wysokości do 0
         duration: 2000,
-        easing: 'easeInOutQuad',
+        easing: 'linear', // Ustawienie równomiernego przyspieszenia
+        complete: function(anim) {
+            plotlyChart.style.opacity = 1; // Po zakończeniu animacji ustawiamy pełną widoczność
+        }
     });
 });
+
+
 
 let ifwas = 0;
 let end=0;
