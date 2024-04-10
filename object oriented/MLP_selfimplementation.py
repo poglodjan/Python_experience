@@ -118,7 +118,7 @@ class MultiLayers(object):
 ##
 ##
     def forward(self, x):
-# 1) _______ Propagacja w przód _______
+# 1) _______ Forward propagation _______
         if self.normalization=="std": layer=self.normalize_std(x)
         if self.normalization=="minmax": layer=self.normalize_minmax(x)
         layer = x 
@@ -137,7 +137,7 @@ class MultiLayers(object):
         return output
     
     def backward(self,y,y_predicted, optimization_method):
-# 2) _______ backward algorithm with gradients _______ #
+# 2) _______ backward propagation with gradients _______ #
         gradient_biases, gradient_weights = self.gradients(y, y_predicted)
         gradient_biases, gradient_weights = optimization_method(gradient_biases, gradient_weights)
         self.weights = [w- self.learn*g for (w,g) in zip(self.weights, gradient_weights)]
