@@ -1,0 +1,10 @@
+Global alignment no. 1:
+-ATAT
+TATA-
+Score: 11
+
+Global alignment no. 2:
+ATAT-
+-TATA
+Score: 11
+
