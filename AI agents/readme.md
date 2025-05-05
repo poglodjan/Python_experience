@@ -1,0 +1,2 @@
+# Infectious Disease Simulation (Mesa).
+- A simulation of the spread of infectious disease built on the Mesa library. Agents move around the grid and can be healthy, infected or have comorbidities. Infection can occur through direct contact with another agent or by visiting an infected location. The visualization shows the movement of agents, infected cells and a graph showing the sources of infection. Population parameters can be adjusted through the user interface.
