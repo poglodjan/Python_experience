@@ -1,0 +1,357 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 700px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "AP", "label": "AP", "shape": "dot", "size": 8.235294117647058, "title": "User: AP\nLocal Connections: 11"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "heyits_toby", "label": "heyits_toby", "shape": "dot", "size": 15.0, "title": "User: heyits_toby\nLocal Connections: 34"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "micparrish", "label": "micparrish", "shape": "dot", "size": 10.882352941176471, "title": "User: micparrish\nLocal Connections: 20"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Network_Citizen", "label": "Network_Citizen", "shape": "dot", "size": 7.0588235294117645, "title": "User: Network_Citizen\nLocal Connections: 7"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "_billy_moyer_", "label": "_billy_moyer_", "shape": "dot", "size": 10.882352941176471, "title": "User: _billy_moyer_\nLocal Connections: 20"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Reuters", "label": "Reuters", "shape": "dot", "size": 7.647058823529411, "title": "User: Reuters\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "ChicagoILDaily", "label": "ChicagoILDaily", "shape": "dot", "size": 8.235294117647058, "title": "User: ChicagoILDaily\nLocal Connections: 11"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "ScottPresler", "label": "ScottPresler", "shape": "dot", "size": 7.647058823529411, "title": "User: ScottPresler\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "NBCNews", "label": "NBCNews", "shape": "dot", "size": 8.235294117647058, "title": "User: NBCNews\nLocal Connections: 11"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "judelambertusa", "label": "judelambertusa", "shape": "dot", "size": 12.058823529411764, "title": "User: judelambertusa\nLocal Connections: 24"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "klara_sauber", "label": "klara_sauber", "shape": "dot", "size": 5.588235294117647, "title": "User: klara_sauber\nLocal Connections: 2"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "2AFight", "label": "2AFight", "shape": "dot", "size": 7.647058823529411, "title": "User: 2AFight\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "michellearry", "label": "michellearry", "shape": "dot", "size": 15.0, "title": "User: michellearry\nLocal Connections: 34"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "HuffingtonPost", "label": "HuffingtonPost", "shape": "dot", "size": 7.9411764705882355, "title": "User: HuffingtonPost\nLocal Connections: 10"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "HouseCracka", "label": "HouseCracka", "shape": "dot", "size": 7.0588235294117645, "title": "User: HouseCracka\nLocal Connections: 7"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "RT_America", "label": "RT_America", "shape": "dot", "size": 6.176470588235294, "title": "User: RT_America\nLocal Connections: 4"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "bobfox321", "label": "bobfox321", "shape": "dot", "size": 7.352941176470589, "title": "User: bobfox321\nLocal Connections: 8"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "logan_whatsup", "label": "logan_whatsup", "shape": "dot", "size": 11.176470588235293, "title": "User: logan_whatsup\nLocal Connections: 21"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "theblaze", "label": "theblaze", "shape": "dot", "size": 6.764705882352941, "title": "User: theblaze\nLocal Connections: 6"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "WSCP1", "label": "WSCP1", "shape": "dot", "size": 7.352941176470589, "title": "User: WSCP1\nLocal Connections: 8"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "mashable", "label": "mashable", "shape": "dot", "size": 8.235294117647058, "title": "User: mashable\nLocal Connections: 11"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "TwitchyTeam", "label": "TwitchyTeam", "shape": "dot", "size": 7.647058823529411, "title": "User: TwitchyTeam\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "hollandpatrickk", "label": "hollandpatrickk", "shape": "dot", "size": 12.941176470588236, "title": "User: hollandpatrickk\nLocal Connections: 27"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "FreeBeacon", "label": "FreeBeacon", "shape": "dot", "size": 7.352941176470589, "title": "User: FreeBeacon\nLocal Connections: 8"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "evewebster373", "label": "evewebster373", "shape": "dot", "size": 12.352941176470589, "title": "User: evewebster373\nLocal Connections: 25"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "catwahler", "label": "catwahler", "shape": "dot", "size": 7.0588235294117645, "title": "User: catwahler\nLocal Connections: 7"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "RealAlexJones", "label": "RealAlexJones", "shape": "dot", "size": 7.647058823529411, "title": "User: RealAlexJones\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "jamie_mccarthy_", "label": "jamie_mccarthy_", "shape": "dot", "size": 7.9411764705882355, "title": "User: jamie_mccarthy_\nLocal Connections: 10"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "guardian", "label": "guardian", "shape": "dot", "size": 8.823529411764707, "title": "User: guardian\nLocal Connections: 13"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "redsteeze", "label": "redsteeze", "shape": "dot", "size": 7.352941176470589, "title": "User: redsteeze\nLocal Connections: 8"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Chris_1791", "label": "Chris_1791", "shape": "dot", "size": 8.235294117647058, "title": "User: Chris_1791\nLocal Connections: 11"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "austinlovesbeer", "label": "austinlovesbeer", "shape": "dot", "size": 5.588235294117647, "title": "User: austinlovesbeer\nLocal Connections: 2"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "WSJ", "label": "WSJ", "shape": "dot", "size": 7.647058823529411, "title": "User: WSJ\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "NaughtyBeyotch", "label": "NaughtyBeyotch", "shape": "dot", "size": 7.9411764705882355, "title": "User: NaughtyBeyotch\nLocal Connections: 10"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "WashTimes", "label": "WashTimes", "shape": "dot", "size": 7.0588235294117645, "title": "User: WashTimes\nLocal Connections: 7"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "priceforpierce", "label": "priceforpierce", "shape": "dot", "size": 12.352941176470589, "title": "User: priceforpierce\nLocal Connections: 25"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "nataturn", "label": "nataturn", "shape": "dot", "size": 5.882352941176471, "title": "User: nataturn\nLocal Connections: 3"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "entatjanamax", "label": "entatjanamax", "shape": "dot", "size": 5.588235294117647, "title": "User: entatjanamax\nLocal Connections: 2"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "jeannemccarthy0", "label": "jeannemccarthy0", "shape": "dot", "size": 13.529411764705882, "title": "User: jeannemccarthy0\nLocal Connections: 29"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "BraveConWarrior", "label": "BraveConWarrior", "shape": "dot", "size": 7.0588235294117645, "title": "User: BraveConWarrior\nLocal Connections: 7"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "ArcticFox2016", "label": "ArcticFox2016", "shape": "dot", "size": 7.647058823529411, "title": "User: ArcticFox2016\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Jenn_Abrams", "label": "Jenn_Abrams", "shape": "dot", "size": 8.529411764705882, "title": "User: Jenn_Abrams\nLocal Connections: 12"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Politweecs", "label": "Politweecs", "shape": "dot", "size": 8.235294117647058, "title": "User: Politweecs\nLocal Connections: 11"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "TIME", "label": "TIME", "shape": "dot", "size": 7.647058823529411, "title": "User: TIME\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "USATODAY", "label": "USATODAY", "shape": "dot", "size": 7.9411764705882355, "title": "User: USATODAY\nLocal Connections: 10"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "CO2HOG", "label": "CO2HOG", "shape": "dot", "size": 7.647058823529411, "title": "User: CO2HOG\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Shooters_Wife", "label": "Shooters_Wife", "shape": "dot", "size": 7.647058823529411, "title": "User: Shooters_Wife\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "Independent", "label": "Independent", "shape": "dot", "size": 7.9411764705882355, "title": "User: Independent\nLocal Connections: 10"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "c__wells", "label": "c__wells", "shape": "dot", "size": 8.823529411764707, "title": "User: c__wells\nLocal Connections: 13"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "peddoc63", "label": "peddoc63", "shape": "dot", "size": 7.647058823529411, "title": "User: peddoc63\nLocal Connections: 9"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "anthonywoodboy", "label": "anthonywoodboy", "shape": "dot", "size": 6.764705882352941, "title": "User: anthonywoodboy\nLocal Connections: 6"}, {"borderColor": "#ffffff", "borderWidth": 1, "color": "#00c2cb", "font": {"color": "white"}, "id": "laurabaeley", "label": "laurabaeley", "shape": "dot", "size": 13.235294117647058, "title": "User: laurabaeley\nLocal Connections: 28"}]);
+                  edges = new vis.DataSet([{"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "heyits_toby", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "theblaze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "hollandpatrickk", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "heyits_toby", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "WashTimes", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "micparrish", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "WashTimes", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "_billy_moyer_", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "theblaze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "heyits_toby", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "judelambertusa", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "klara_sauber", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "klara_sauber", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "RT_America", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "hollandpatrickk", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "theblaze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "WashTimes", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "michellearry", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "WashTimes", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "logan_whatsup", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "theblaze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "RT_America", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "hollandpatrickk", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "heyits_toby", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "evewebster373", "to": "WashTimes", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jamie_mccarthy_", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "austinlovesbeer", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "austinlovesbeer", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "hollandpatrickk", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "heyits_toby", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "priceforpierce", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "nataturn", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "nataturn", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "nataturn", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "entatjanamax", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "entatjanamax", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "theblaze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "RT_America", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "WashTimes", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "jeannemccarthy0", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "hollandpatrickk", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "redsteeze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "heyits_toby", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "HouseCracka", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "bobfox321", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "c__wells", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "anthonywoodboy", "to": "Chris_1791", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "anthonywoodboy", "to": "BraveConWarrior", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "anthonywoodboy", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "anthonywoodboy", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "anthonywoodboy", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "anthonywoodboy", "to": "ScottPresler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "USATODAY", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "TwitchyTeam", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "RealAlexJones", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "Jenn_Abrams", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "peddoc63", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "theblaze", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "Shooters_Wife", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "2AFight", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "ChicagoILDaily", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "FreeBeacon", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "Reuters", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "NBCNews", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "TIME", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "guardian", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "HuffingtonPost", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "WSJ", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "Independent", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "mashable", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "CO2HOG", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "Politweecs", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "WSCP1", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "catwahler", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "AP", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "Network_Citizen", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "ArcticFox2016", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "NaughtyBeyotch", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "RT_America", "width": 1.0}, {"alpha": 0.3, "color": "#4adede", "from": "laurabaeley", "to": "WashTimes", "width": 1.0}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.1,
+            "damping": 0.95,
+            "gravitationalConstant": -2000,
+            "springConstant": 0.05,
+            "springLength": 150
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
