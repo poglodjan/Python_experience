@@ -1,0 +1,416 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 800px;
+                 background-color: #000000;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 800px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_18", "label": "Immortal Beloved...", "shape": "square", "size": 25, "title": "Film: Immortal Beloved\nGrupa: 6"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_101", "label": "Complete Shamanic Pr...", "shape": "square", "size": 25, "title": "Film: Complete Shamanic Princess\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_90", "label": "The Lemon Drop Kid...", "shape": "square", "size": 25, "title": "Film: The Lemon Drop Kid\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_351", "label": "Guns of the Magnific...", "shape": "square", "size": 25, "title": "Film: Guns of the Magnificent Seven\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_30", "label": "Something\u0027s Gotta Gi...", "shape": "square", "size": 25, "title": "Film: Something\u0027s Gotta Give\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_81", "label": "Antarctica: IMAX...", "shape": "square", "size": 25, "title": "Film: Antarctica: IMAX\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_287", "label": "Luther Vandross: Alw...", "shape": "square", "size": 25, "title": "Film: Luther Vandross: Always and Forever: An Evening of Songs\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_99", "label": "A Fishy Story...", "shape": "square", "size": 25, "title": "Film: A Fishy Story\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_331", "label": "Chasing Amy...", "shape": "square", "size": 25, "title": "Film: Chasing Amy\nGrupa: 2"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_171", "label": "Funny Face...", "shape": "square", "size": 25, "title": "Film: Funny Face\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_311", "label": "Ed Wood...", "shape": "square", "size": 25, "title": "Film: Ed Wood\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_115", "label": "Lord Peter Wimsey: M...", "shape": "square", "size": 25, "title": "Film: Lord Peter Wimsey: Murder Must Advertise\nGrupa: 2"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_119", "label": "Travel the World by ...", "shape": "square", "size": 25, "title": "Film: Travel the World by Train: Africa\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_142", "label": "The Tricky Master...", "shape": "square", "size": 25, "title": "Film: The Tricky Master\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_68", "label": "Invader Zim...", "shape": "square", "size": 25, "title": "Film: Invader Zim\nGrupa: 2"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_310", "label": "Leila...", "shape": "square", "size": 25, "title": "Film: Leila\nGrupa: 5"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_165", "label": "Richard Pryor: Live ...", "shape": "square", "size": 25, "title": "Film: Richard Pryor: Live on the Sunset Strip\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_1664010", "label": "U_1664010", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1664010"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_279", "label": "Micki and Maude...", "shape": "square", "size": 25, "title": "Film: Micki and Maude\nGrupa: 2"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_203", "label": "Sports Illustrated S...", "shape": "square", "size": 25, "title": "Film: Sports Illustrated Swimsuit Edition: 1997\nGrupa: 1"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_312", "label": "High Fidelity...", "shape": "square", "size": 25, "title": "Film: High Fidelity\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_170", "label": "Tomorrow...", "shape": "square", "size": 25, "title": "Film: Tomorrow\nGrupa: 6"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "U_1403217", "label": "U_1403217", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1403217"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_272", "label": "Female Yakuza Tale...", "shape": "square", "size": 25, "title": "Film: Female Yakuza Tale\nGrupa: 5"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_110", "label": "Scandal...", "shape": "square", "size": 25, "title": "Film: Scandal\nGrupa: 3"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_91", "label": "WWE: Royal Rumble 20...", "shape": "square", "size": 25, "title": "Film: WWE: Royal Rumble 2005\nGrupa: 1"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "U_1461435", "label": "U_1461435", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1461435"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_245", "label": "Road Dogz...", "shape": "square", "size": 25, "title": "Film: Road Dogz\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_296", "label": "In His Life: The Joh...", "shape": "square", "size": 25, "title": "Film: In His Life: The John Lennon Story\nGrupa: 6"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_249", "label": "The Hunters...", "shape": "square", "size": 25, "title": "Film: The Hunters\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_216", "label": "Impostor...", "shape": "square", "size": 25, "title": "Film: Impostor\nGrupa: 6"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_273", "label": "Taxi...", "shape": "square", "size": 25, "title": "Film: Taxi\nGrupa: 4"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_41", "label": "Horror Vision...", "shape": "square", "size": 25, "title": "Film: Horror Vision\nGrupa: 3"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_185", "label": "Missing in Action 2:...", "shape": "square", "size": 25, "title": "Film: Missing in Action 2: The Beginning / Missing in Action 3: Braddock\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_333", "label": "Mail Call: The Best ...", "shape": "square", "size": 25, "title": "Film: Mail Call: The Best of Season 2\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "U_1061195", "label": "U_1061195", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1061195"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_24", "label": "My Bloody Valentine...", "shape": "square", "size": 25, "title": "Film: My Bloody Valentine\nGrupa: 1"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_109", "label": "No Way Back...", "shape": "square", "size": 25, "title": "Film: No Way Back\nGrupa: 1"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_194", "label": "Arliss: The Best of ...", "shape": "square", "size": 25, "title": "Film: Arliss: The Best of Arliss\nGrupa: 2"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_233", "label": "Chato\u0027s Land...", "shape": "square", "size": 25, "title": "Film: Chato\u0027s Land\nGrupa: 3"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_23", "label": "Clifford: Clifford S...", "shape": "square", "size": 25, "title": "Film: Clifford: Clifford Saves the Day! / Clifford\u0027s Fluffiest Friend Cleo\nGrupa: 4"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_33", "label": "Aqua Teen Hunger For...", "shape": "square", "size": 25, "title": "Film: Aqua Teen Hunger Force: Vol. 1\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_295", "label": "Ace Ventura: When Na...", "shape": "square", "size": 25, "title": "Film: Ace Ventura: When Nature Calls\nGrupa: 3"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "U_1314869", "label": "U_1314869", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1314869"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_187", "label": "Death to Smoochy...", "shape": "square", "size": 25, "title": "Film: Death to Smoochy\nGrupa: 3"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_83", "label": "Silkwood...", "shape": "square", "size": 25, "title": "Film: Silkwood\nGrupa: 3"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_208", "label": "The Three Stooges: S...", "shape": "square", "size": 25, "title": "Film: The Three Stooges: Sing a Song of Six Pants\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_716173", "label": "U_716173", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_716173"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_294", "label": "Oasis...", "shape": "square", "size": 25, "title": "Film: Oasis\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_62", "label": "Ken Burns\u0027 America: ...", "shape": "square", "size": 25, "title": "Film: Ken Burns\u0027 America: Empire of the Air\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_281", "label": "The Legend...", "shape": "square", "size": 25, "title": "Film: The Legend\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_285", "label": "The Devil\u0027s Own...", "shape": "square", "size": 25, "title": "Film: The Devil\u0027s Own\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_299", "label": "Bridget Jones\u0027s Diar...", "shape": "square", "size": 25, "title": "Film: Bridget Jones\u0027s Diary\nGrupa: 3"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "U_2147527", "label": "U_2147527", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_2147527"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_97", "label": "Mostly Martha...", "shape": "square", "size": 25, "title": "Film: Mostly Martha\nGrupa: 4"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_327", "label": "Storefront Hitchcock...", "shape": "square", "size": 25, "title": "Film: Storefront Hitchcock\nGrupa: 3"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_316", "label": "Futurama: Monster Ro...", "shape": "square", "size": 25, "title": "Film: Futurama: Monster Robot Maniac Fun Collection\nGrupa: 5"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_204", "label": "Venus Boyz...", "shape": "square", "size": 25, "title": "Film: Venus Boyz\nGrupa: 3"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_238", "label": "Led Zeppelin: The So...", "shape": "square", "size": 25, "title": "Film: Led Zeppelin: The Song Remains the Same\nGrupa: 2"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_4", "label": "Paula Abdul\u0027s Get Up...", "shape": "square", "size": 25, "title": "Film: Paula Abdul\u0027s Get Up \u0026 Dance\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_168", "label": "Smokey and the Bandi...", "shape": "square", "size": 25, "title": "Film: Smokey and the Bandit Part 3\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_67", "label": "Vampire Journals...", "shape": "square", "size": 25, "title": "Film: Vampire Journals\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_210", "label": "Onmyoji...", "shape": "square", "size": 25, "title": "Film: Onmyoji\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_300", "label": "Option Zero...", "shape": "square", "size": 25, "title": "Film: Option Zero\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_50", "label": "A Yank in the R.A.F....", "shape": "square", "size": 25, "title": "Film: A Yank in the R.A.F.\nGrupa: 3"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_262", "label": "Herbie Rides Again...", "shape": "square", "size": 25, "title": "Film: Herbie Rides Again\nGrupa: 5"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "U_507603", "label": "U_507603", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_507603"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_1037245", "label": "U_1037245", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1037245"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_309", "label": "The Day of the Locus...", "shape": "square", "size": 25, "title": "Film: The Day of the Locust\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_322", "label": "Flesh Gordon...", "shape": "square", "size": 25, "title": "Film: Flesh Gordon\nGrupa: 1"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_317", "label": "Mandela and de Klerk...", "shape": "square", "size": 25, "title": "Film: Mandela and de Klerk\nGrupa: 5"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_340", "label": "Midnight: 2000 Seen ...", "shape": "square", "size": 25, "title": "Film: Midnight: 2000 Seen By...\nGrupa: 1"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_78", "label": "Jingle All the Way...", "shape": "square", "size": 25, "title": "Film: Jingle All the Way\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_52", "label": "The Weather Undergro...", "shape": "square", "size": 25, "title": "Film: The Weather Underground\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_95", "label": "Dona Herlinda and He...", "shape": "square", "size": 25, "title": "Film: Dona Herlinda and Her Son\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_308", "label": "The Legend of the 7 ...", "shape": "square", "size": 25, "title": "Film: The Legend of the 7 Golden Vampires/7 Brothers of Dracula\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_113", "label": "Bruce Lee: A Warrior...", "shape": "square", "size": 25, "title": "Film: Bruce Lee: A Warrior\u0027s Journey\nGrupa: 6"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_332", "label": "They Crawl...", "shape": "square", "size": 25, "title": "Film: They Crawl\nGrupa: 4"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_107", "label": "Magnolia: Bonus Mate...", "shape": "square", "size": 25, "title": "Film: Magnolia: Bonus Material\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_84", "label": "The Powerpuff Girls ...", "shape": "square", "size": 25, "title": "Film: The Powerpuff Girls Movie\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_224", "label": "Midsomer Murders: Bl...", "shape": "square", "size": 25, "title": "Film: Midsomer Murders: Blood Will Out\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_338", "label": "The Three Stooges: T...", "shape": "square", "size": 25, "title": "Film: The Three Stooges: Three Smart Saps\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_222", "label": "Yellow...", "shape": "square", "size": 25, "title": "Film: Yellow\nGrupa: 1"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_116", "label": "Bear Cub...", "shape": "square", "size": 25, "title": "Film: Bear Cub\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_27", "label": "Sesame Street: Elmo\u0027...", "shape": "square", "size": 25, "title": "Film: Sesame Street: Elmo\u0027s World: The Street We Live On\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_85", "label": "Elfen Lied...", "shape": "square", "size": 25, "title": "Film: Elfen Lied\nGrupa: 1"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_164", "label": "One Last Dance...", "shape": "square", "size": 25, "title": "Film: One Last Dance\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_271", "label": "Saludos Amigos...", "shape": "square", "size": 25, "title": "Film: Saludos Amigos\nGrupa: 6"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_286", "label": "Thunderbirds Are Go...", "shape": "square", "size": 25, "title": "Film: Thunderbirds Are Go\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_275", "label": "Evelyn...", "shape": "square", "size": 25, "title": "Film: Evelyn\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_353", "label": "Life or Something Li...", "shape": "square", "size": 25, "title": "Film: Life or Something Like It\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_69", "label": "WWE: Armageddon 2003...", "shape": "square", "size": 25, "title": "Film: WWE: Armageddon 2003\nGrupa: 3"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_268", "label": "The Final Countdown...", "shape": "square", "size": 25, "title": "Film: The Final Countdown\nGrupa: 5"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_58", "label": "Dragonheart...", "shape": "square", "size": 25, "title": "Film: Dragonheart\nGrupa: 1"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_79", "label": "The Killing...", "shape": "square", "size": 25, "title": "Film: The Killing\nGrupa: 1"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_223", "label": "Chappelle\u0027s Show: Se...", "shape": "square", "size": 25, "title": "Film: Chappelle\u0027s Show: Season 1\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_181", "label": "The Last Shot...", "shape": "square", "size": 25, "title": "Film: The Last Shot\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_199", "label": "The Deer Hunter...", "shape": "square", "size": 25, "title": "Film: The Deer Hunter\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_2625420", "label": "U_2625420", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_2625420"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_143", "label": "The Game...", "shape": "square", "size": 25, "title": "Film: The Game\nGrupa: 4"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_225", "label": "The Cookout...", "shape": "square", "size": 25, "title": "Film: The Cookout\nGrupa: 4"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_215", "label": "That \u002770s Show: Seas...", "shape": "square", "size": 25, "title": "Film: That \u002770s Show: Season 1\nGrupa: 2"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_138", "label": "Star Trek: Voyager: ...", "shape": "square", "size": 25, "title": "Film: Star Trek: Voyager: Season 1\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_241", "label": "North by Northwest...", "shape": "square", "size": 25, "title": "Film: North by Northwest\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_243", "label": "Pressure Point...", "shape": "square", "size": 25, "title": "Film: Pressure Point\nGrupa: 3"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_266", "label": "Saudade Do Futuro...", "shape": "square", "size": 25, "title": "Film: Saudade Do Futuro\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_278", "label": "100 Days Before the ...", "shape": "square", "size": 25, "title": "Film: 100 Days Before the Command\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_73", "label": "Davy Crockett: 50th ...", "shape": "square", "size": 25, "title": "Film: Davy Crockett: 50th Anniversary Double Feature\nGrupa: 1"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_19", "label": "By Dawn\u0027s Early Ligh...", "shape": "square", "size": 25, "title": "Film: By Dawn\u0027s Early Light\nGrupa: 3"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_257", "label": "Charlotte\u0027s Web...", "shape": "square", "size": 25, "title": "Film: Charlotte\u0027s Web\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_226", "label": "Henry: Portrait of a...", "shape": "square", "size": 25, "title": "Film: Henry: Portrait of a Serial Killer 2\nGrupa: 2"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_148", "label": "Sweet November...", "shape": "square", "size": 25, "title": "Film: Sweet November\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_341", "label": "Tremors 4: The Legen...", "shape": "square", "size": 25, "title": "Film: Tremors 4: The Legend Begins\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_175", "label": "Reservoir Dogs...", "shape": "square", "size": 25, "title": "Film: Reservoir Dogs\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_2083367", "label": "U_2083367", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_2083367"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_209", "label": "Star Trek: Deep Spac...", "shape": "square", "size": 25, "title": "Film: Star Trek: Deep Space Nine: Season 5\nGrupa: 1"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_161", "label": "Ninotchka...", "shape": "square", "size": 25, "title": "Film: Ninotchka\nGrupa: 4"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_88", "label": "Record of Lodoss War...", "shape": "square", "size": 25, "title": "Film: Record of Lodoss War: Chronicles of the Heroic Knight\nGrupa: 6"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_239", "label": "Winnie the Pooh: Spr...", "shape": "square", "size": 25, "title": "Film: Winnie the Pooh: Springtime with Roo\nGrupa: 4"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_82", "label": "The Frogmen...", "shape": "square", "size": 25, "title": "Film: The Frogmen\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_153", "label": "MTV Yoga...", "shape": "square", "size": 25, "title": "Film: MTV Yoga\nGrupa: 1"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_5", "label": "The Rise and Fall of...", "shape": "square", "size": 25, "title": "Film: The Rise and Fall of ECW\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_77", "label": "Congo...", "shape": "square", "size": 25, "title": "Film: Congo\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_117", "label": "Silk Stockings...", "shape": "square", "size": 25, "title": "Film: Silk Stockings\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_57", "label": "Richard III...", "shape": "square", "size": 25, "title": "Film: Richard III\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_267", "label": "Touched by an Angel:...", "shape": "square", "size": 25, "title": "Film: Touched by an Angel: Season 1\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_358", "label": "The Onion Field...", "shape": "square", "size": 25, "title": "Film: The Onion Field\nGrupa: 6"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "U_2118461", "label": "U_2118461", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_2118461"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_144", "label": "Deepak Chopra: The W...", "shape": "square", "size": 25, "title": "Film: Deepak Chopra: The Way of the Wizard \u0026 Alchemy\nGrupa: 4"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_357", "label": "House of Sand and Fo...", "shape": "square", "size": 25, "title": "Film: House of Sand and Fog\nGrupa: 3"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "U_387418", "label": "U_387418", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_387418"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_178", "label": "Regular Guys...", "shape": "square", "size": 25, "title": "Film: Regular Guys\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_11", "label": "Full Frame: Document...", "shape": "square", "size": 25, "title": "Film: Full Frame: Documentary Shorts\nGrupa: 2"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_314", "label": "Saturday Night Live:...", "shape": "square", "size": 25, "title": "Film: Saturday Night Live: The Best of Jon Lovitz\nGrupa: 4"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_255", "label": "The Hunchback of Not...", "shape": "square", "size": 25, "title": "Film: The Hunchback of Notre Dame II\nGrupa: 4"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_186", "label": "Panic in the Streets...", "shape": "square", "size": 25, "title": "Film: Panic in the Streets\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_7", "label": "8 Man...", "shape": "square", "size": 25, "title": "Film: 8 Man\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_230", "label": "Unsolved Mysteries: ...", "shape": "square", "size": 25, "title": "Film: Unsolved Mysteries: Psychics\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_59", "label": "Sex and the Beauties...", "shape": "square", "size": 25, "title": "Film: Sex and the Beauties\nGrupa: 6"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_141", "label": "Goddess of Mercy...", "shape": "square", "size": 25, "title": "Film: Goddess of Mercy\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_173", "label": "The Devil\u0027s Brigade...", "shape": "square", "size": 25, "title": "Film: The Devil\u0027s Brigade\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_108", "label": "Spartan...", "shape": "square", "size": 25, "title": "Film: Spartan\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_334", "label": "The Pacifier...", "shape": "square", "size": 25, "title": "Film: The Pacifier\nGrupa: 2"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_149", "label": "The Edward R. Murrow...", "shape": "square", "size": 25, "title": "Film: The Edward R. Murrow Collection\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_349", "label": "The Swarm...", "shape": "square", "size": 25, "title": "Film: The Swarm\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_289", "label": "The Avengers...", "shape": "square", "size": 25, "title": "Film: The Avengers\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_344", "label": "The Taming of the Sh...", "shape": "square", "size": 25, "title": "Film: The Taming of the Shrew\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_256", "label": "Ghost Dog: The Way o...", "shape": "square", "size": 25, "title": "Film: Ghost Dog: The Way of the Samurai\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_111", "label": "Duplex (Widescreen)...", "shape": "square", "size": 25, "title": "Film: Duplex (Widescreen)\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_169", "label": "Cartoon Network Hall...", "shape": "square", "size": 25, "title": "Film: Cartoon Network Halloween: 9 Creepy Cartoon Capers\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_305", "label": "Jack...", "shape": "square", "size": 25, "title": "Film: Jack\nGrupa: 6"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_86", "label": "Iron Monkey 2...", "shape": "square", "size": 25, "title": "Film: Iron Monkey 2\nGrupa: 3"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_251", "label": "Midsomer Murders: St...", "shape": "square", "size": 25, "title": "Film: Midsomer Murders: Strangler\u0027s Wood\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_122", "label": "Cube 2: Hypercube...", "shape": "square", "size": 25, "title": "Film: Cube 2: Hypercube\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_16", "label": "Screamers...", "shape": "square", "size": 25, "title": "Film: Screamers\nGrupa: 1"}, {"color": "#FFBD33", "font": {"color": "#ffffff"}, "id": "M_246", "label": "The Boston Strangler...", "shape": "square", "size": 25, "title": "Film: The Boston Strangler\nGrupa: 5"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_348", "label": "The Last Temptation ...", "shape": "square", "size": 25, "title": "Film: The Last Temptation of Christ\nGrupa: 6"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_335", "label": "Fear No Evil...", "shape": "square", "size": 25, "title": "Film: Fear No Evil\nGrupa: 4"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_29", "label": "Boycott...", "shape": "square", "size": 25, "title": "Film: Boycott\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_123", "label": "Chain of Fools...", "shape": "square", "size": 25, "title": "Film: Chain of Fools\nGrupa: 6"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "U_305344", "label": "U_305344", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_305344"}, {"color": "#F333FF", "font": {"color": "#ffffff"}, "id": "M_297", "label": "The Hebrew Hammer...", "shape": "square", "size": 25, "title": "Film: The Hebrew Hammer\nGrupa: 4"}, {"color": "#3357FF", "font": {"color": "#ffffff"}, "id": "M_2", "label": "Isle of Man TT 2004 ...", "shape": "square", "size": 25, "title": "Film: Isle of Man TT 2004 Review\nGrupa: 3"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_360", "label": "Lies...", "shape": "square", "size": 25, "title": "Film: Lies\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_191", "label": "X2: X-Men United...", "shape": "square", "size": 25, "title": "Film: X2: X-Men United\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_172", "label": "Jack...", "shape": "square", "size": 25, "title": "Film: Jack\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_146", "label": "Cannibal Women in th...", "shape": "square", "size": 25, "title": "Film: Cannibal Women in the Avocado Jungle of Death\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_2439493", "label": "U_2439493", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_2439493"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_282", "label": "Blue Seed: Beyond...", "shape": "square", "size": 25, "title": "Film: Blue Seed: Beyond\nGrupa: 1"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_236", "label": "Cartoon Crazys Sci-F...", "shape": "square", "size": 25, "title": "Film: Cartoon Crazys Sci-Fi\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_156", "label": "Husbands and Wives...", "shape": "square", "size": 25, "title": "Film: Husbands and Wives\nGrupa: 6"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "M_147", "label": "Where Sleeping Dogs ...", "shape": "square", "size": 25, "title": "Film: Where Sleeping Dogs Lie\nGrupa: 6"}, {"color": "#FF5733", "font": {"color": "#ffffff"}, "id": "M_17", "label": "7 Seconds...", "shape": "square", "size": 25, "title": "Film: 7 Seconds\nGrupa: 1"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_315", "label": "Combat! Season 3: Op...", "shape": "square", "size": 25, "title": "Film: Combat! Season 3: Operation 2\nGrupa: 2"}, {"color": "#33FF57", "font": {"color": "#ffffff"}, "id": "M_22", "label": "Chump Change...", "shape": "square", "size": 25, "title": "Film: Chump Change\nGrupa: 2"}, {"color": "#444444", "font": {"color": "#ffffff"}, "id": "U_1932594", "label": "U_1932594", "shape": "dot", "size": 12, "title": "U\u017cytkownik: U_1932594"}]);
+                  edges = new vis.DataSet([{"alpha": 0.1, "color": "#222222", "from": "M_18", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_18", "to": "U_716173"}, {"alpha": 0.1, "color": "#222222", "from": "M_18", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_101", "to": "U_2118461"}, {"alpha": 0.1, "color": "#222222", "from": "M_90", "to": "U_1664010"}, {"alpha": 0.1, "color": "#222222", "from": "M_351", "to": "U_2439493"}, {"alpha": 0.1, "color": "#222222", "from": "M_30", "to": "U_2625420"}, {"alpha": 0.1, "color": "#222222", "from": "M_81", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_287", "to": "U_507603"}, {"alpha": 0.1, "color": "#222222", "from": "M_99", "to": "U_1932594"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_331", "to": "U_2147527"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_171", "to": "U_507603"}, {"alpha": 0.1, "color": "#222222", "from": "M_311", "to": "U_1037245"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_115", "to": "U_2147527"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_115", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_119", "to": "U_2439493"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_119", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_142", "to": "U_2625420"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_68", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_310", "to": "U_1403217"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_310", "to": "U_2118461"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_165", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_289"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_272"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_88"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_199"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_236"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_27"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_256"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_95"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_156"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_67"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_169"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_344"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_224"}, {"alpha": 0.1, "color": "#222222", "from": "U_1664010", "to": "M_148"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_279", "to": "U_305344"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_203", "to": "U_507603"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_312", "to": "U_507603"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_312", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_170", "to": "U_2439493"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_335"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_144"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_23"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_97"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_161"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_314"}, {"alpha": 0.1, "color": "#222222", "from": "U_1403217", "to": "M_257"}, {"alpha": 0.1, "color": "#222222", "from": "U_1403217", "to": "M_216"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1403217", "to": "M_297"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_272", "to": "U_2118461"}, {"alpha": 0.3, "color": "#3357FF", "from": "M_110", "to": "U_1461435"}, {"alpha": 0.1, "color": "#222222", "from": "M_110", "to": "U_305344"}, {"alpha": 0.3, "color": "#3357FF", "from": "M_110", "to": "U_1061195"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_91", "to": "U_387418"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_19"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_327"}, {"alpha": 0.1, "color": "#222222", "from": "U_1461435", "to": "M_249"}, {"alpha": 0.1, "color": "#222222", "from": "U_1461435", "to": "M_222"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_69"}, {"alpha": 0.1, "color": "#222222", "from": "U_1461435", "to": "M_358"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_2"}, {"alpha": 0.1, "color": "#222222", "from": "U_1461435", "to": "M_275"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_41"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_187"}, {"alpha": 0.1, "color": "#222222", "from": "U_1461435", "to": "M_255"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1461435", "to": "M_204"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_245", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_296", "to": "U_2439493"}, {"alpha": 0.1, "color": "#222222", "from": "M_249", "to": "U_387418"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_249", "to": "U_2118461"}, {"alpha": 0.1, "color": "#222222", "from": "M_216", "to": "U_716173"}, {"alpha": 0.3, "color": "#F333FF", "from": "M_273", "to": "U_1314869"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_185", "to": "U_507603"}, {"alpha": 0.1, "color": "#222222", "from": "M_333", "to": "U_2625420"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_83"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_357"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_295"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_299"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_233"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_86"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_187"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_50"}, {"alpha": 0.3, "color": "#3357FF", "from": "U_1061195", "to": "M_243"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_24", "to": "U_387418"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_109", "to": "U_387418"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_194", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_233", "to": "U_1037245"}, {"alpha": 0.1, "color": "#222222", "from": "M_33", "to": "U_2439493"}, {"alpha": 0.1, "color": "#222222", "from": "M_295", "to": "U_387418"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_225"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_143"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_97"}, {"alpha": 0.1, "color": "#222222", "from": "U_1314869", "to": "M_148"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_239"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_332"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_255"}, {"alpha": 0.1, "color": "#222222", "from": "U_1314869", "to": "M_316"}, {"alpha": 0.3, "color": "#F333FF", "from": "U_1314869", "to": "M_335"}, {"alpha": 0.1, "color": "#222222", "from": "M_208", "to": "U_2083367"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_275"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_122"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_241"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_57"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_305"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_148"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_181"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_299"}, {"alpha": 0.1, "color": "#222222", "from": "U_716173", "to": "M_147"}, {"alpha": 0.1, "color": "#222222", "from": "M_294", "to": "U_2625420"}, {"alpha": 0.1, "color": "#222222", "from": "M_62", "to": "U_1932594"}, {"alpha": 0.1, "color": "#222222", "from": "M_281", "to": "U_2083367"}, {"alpha": 0.1, "color": "#222222", "from": "M_285", "to": "U_2083367"}, {"alpha": 0.1, "color": "#222222", "from": "M_285", "to": "U_1932594"}, {"alpha": 0.1, "color": "#222222", "from": "M_299", "to": "U_2147527"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_238"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_148"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_117"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_5"}, {"alpha": 0.1, "color": "#222222", "from": "U_2147527", "to": "M_246"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_149"}, {"alpha": 0.1, "color": "#222222", "from": "U_2147527", "to": "M_314"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_215"}, {"alpha": 0.1, "color": "#222222", "from": "U_2147527", "to": "M_169"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_2147527", "to": "M_223"}, {"alpha": 0.1, "color": "#222222", "from": "M_97", "to": "U_387418"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_316", "to": "U_2118461"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_4", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_168", "to": "U_1037245"}, {"alpha": 0.1, "color": "#222222", "from": "M_67", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_210", "to": "U_2439493"}, {"alpha": 0.1, "color": "#222222", "from": "M_300", "to": "U_2625420"}, {"alpha": 0.1, "color": "#222222", "from": "M_50", "to": "U_507603"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_262", "to": "U_2118461"}, {"alpha": 0.3, "color": "#FF5733", "from": "U_507603", "to": "M_58"}, {"alpha": 0.1, "color": "#222222", "from": "U_507603", "to": "M_348"}, {"alpha": 0.3, "color": "#FF5733", "from": "U_507603", "to": "M_17"}, {"alpha": 0.3, "color": "#FF5733", "from": "U_507603", "to": "M_282"}, {"alpha": 0.1, "color": "#222222", "from": "U_507603", "to": "M_88"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_348"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_309"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_186"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_29"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_353"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_341"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_178"}, {"alpha": 0.1, "color": "#222222", "from": "U_1037245", "to": "M_95"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_322", "to": "U_387418"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_317", "to": "U_2118461"}, {"alpha": 0.1, "color": "#222222", "from": "M_317", "to": "U_305344"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_340", "to": "U_387418"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_78", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_52", "to": "U_1932594"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_308", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_113", "to": "U_2625420"}, {"alpha": 0.1, "color": "#222222", "from": "M_107", "to": "U_2439493"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_84", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_338", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_222", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_222", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_116", "to": "U_2118461"}, {"alpha": 0.1, "color": "#222222", "from": "M_116", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_27", "to": "U_305344"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_85", "to": "U_387418"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_164", "to": "U_2118461"}, {"alpha": 0.1, "color": "#222222", "from": "M_271", "to": "U_2083367"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_286", "to": "U_2118461"}, {"alpha": 0.1, "color": "#222222", "from": "M_69", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_268", "to": "U_2118461"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_79", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_199", "to": "U_1932594"}, {"alpha": 0.1, "color": "#222222", "from": "M_199", "to": "U_2083367"}, {"alpha": 0.1, "color": "#222222", "from": "U_2625420", "to": "M_59"}, {"alpha": 0.1, "color": "#222222", "from": "U_2625420", "to": "M_173"}, {"alpha": 0.1, "color": "#222222", "from": "U_2625420", "to": "M_7"}, {"alpha": 0.1, "color": "#222222", "from": "U_2625420", "to": "M_257"}, {"alpha": 0.1, "color": "#222222", "from": "M_225", "to": "U_305344"}, {"alpha": 0.3, "color": "#FFBD33", "from": "M_138", "to": "U_2118461"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_266", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_278", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_73", "to": "U_387418"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_226", "to": "U_305344"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_148", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_341", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_175", "to": "U_2439493"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_255"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_191"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_349"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_173"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_357"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_111"}, {"alpha": 0.1, "color": "#222222", "from": "U_2083367", "to": "M_358"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_209", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_161", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_82", "to": "U_2439493"}, {"alpha": 0.3, "color": "#FF5733", "from": "M_153", "to": "U_387418"}, {"alpha": 0.1, "color": "#222222", "from": "M_77", "to": "U_1932594"}, {"alpha": 0.1, "color": "#222222", "from": "M_57", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_267", "to": "U_1932594"}, {"alpha": 0.3, "color": "#FFBD33", "from": "U_2118461", "to": "M_246"}, {"alpha": 0.3, "color": "#FFBD33", "from": "U_2118461", "to": "M_141"}, {"alpha": 0.3, "color": "#FF5733", "from": "U_387418", "to": "M_251"}, {"alpha": 0.3, "color": "#FF5733", "from": "U_387418", "to": "M_172"}, {"alpha": 0.1, "color": "#222222", "from": "U_387418", "to": "M_156"}, {"alpha": 0.1, "color": "#222222", "from": "U_387418", "to": "M_111"}, {"alpha": 0.3, "color": "#FF5733", "from": "U_387418", "to": "M_16"}, {"alpha": 0.1, "color": "#222222", "from": "U_387418", "to": "M_315"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_11", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_186", "to": "U_1932594"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_230", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_108", "to": "U_1932594"}, {"alpha": 0.3, "color": "#33FF57", "from": "M_334", "to": "U_305344"}, {"alpha": 0.1, "color": "#222222", "from": "M_123", "to": "U_2439493"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_305344", "to": "M_22"}, {"alpha": 0.3, "color": "#33FF57", "from": "U_305344", "to": "M_315"}, {"alpha": 0.1, "color": "#222222", "from": "M_360", "to": "U_1932594"}, {"alpha": 0.1, "color": "#222222", "from": "M_146", "to": "U_2439493"}, {"alpha": 0.1, "color": "#222222", "from": "U_2439493", "to": "M_282"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"barnesHut": {"gravitationalConstant": -25000, "springLength": 250}, "minVelocity": 0.75}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
